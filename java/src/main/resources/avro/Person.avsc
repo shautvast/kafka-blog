@@ -1,0 +1,21 @@
+{
+  "namespace": "example.avro",
+  "type" : "record",
+  "name" : "Person",
+  "doc" : "Ape descendent creature dwelling on planet Earth",
+  "aliases": ["Human"],
+  "fields" : [
+    {
+      "name" : "name",
+      "type" : "string"
+    },
+    {
+      "name" : "favorite_number",
+      "type" : "int"
+    },
+    {
+      "name" : "height",
+      "type" : "double"
+    }
+  ]
+}
