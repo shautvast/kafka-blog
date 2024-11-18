@@ -26,12 +26,16 @@ fn main() -> anyhow::Result<()> {
     .parse()
     .expect("Failed to parse schema");
 
-    let mut consumer = Consumer::from_hosts(vec!["localhost:19092".into()])
-        .with_topic_partitions("rustonomicon".to_owned(), &[0])
-        .with_group("mygroup".into())
-        .with_offset_storage(Some(GroupOffsetStorage::Kafka))
-        .create()
-        .unwrap();
+    let mut consumer = Consumer::from_hosts(vec![
+        "localhost:39092".into(),
+        "localhost:39093".into(),
+        "localhost:39094".into(),
+    ])
+    .with_topic_partitions("rustonomicon".to_owned(), &[0])
+    .with_group("mygroup".into())
+    .with_offset_storage(Some(GroupOffsetStorage::Kafka))
+    .create()
+    .unwrap();
 
     loop {
         let message = consumer.poll()?;
