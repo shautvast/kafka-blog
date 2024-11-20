@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-kafka = "0.10"
 apache-avro = "0.17.0"
 anyhow = "1.0"
-# serde_avro_derive = "0.3.1"
-serde_avro_fast = "2.0.0"
-serde_derive = "1.0.215"
-serde = "1.0.215"
+serde = "1.0"
+serde_derive = "1.0"
+rdkafka = "0.36"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3.28"
+schema_registry_converter = { version = "4.2", features = ["avro"] }
+tokio-macros = "2.4.0"

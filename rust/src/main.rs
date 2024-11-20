@@ -1,62 +1,34 @@
-use kafka::{client::GroupOffsetStorage, consumer::Consumer};
+use apache_avro::types::Value;
+use rdkafka::{
+    consumer::{CommitMode, Consumer, StreamConsumer},
+    ClientConfig, Message,
+};
+use schema_registry_converter::async_impl::{avro::AvroDecoder, schema_registry::SrSettings};
 
-fn main() -> anyhow::Result<()> {
-    let schema: serde_avro_fast::Schema = r#"
-        {
-          "namespace": "example.avro",
-          "type" : "record",
-          "name" : "Person",
-          "doc" : "Ape descendent creature dwelling on planet Earth",
-          "aliases": ["Human"],
-          "fields" : [
-            {
-              "name" : "name",
-              "type" : "string"
-            },
-            {
-              "name" : "favorite_number",
-              "type" : "int"
-            },
-            {
-              "name" : "height",
-              "type" : "double"
-            }
-          ]
-        }"#
-    .parse()
-    .expect("Failed to parse schema");
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let consumer: StreamConsumer = ClientConfig::new()
+        .set("group.id", "mygroup")
+        .set(
+            "bootstrap.servers",
+            "localhost:39092,localhost:39093,localhost:39094",
+        )
+        .create()
+        .expect("Consumer creation error");
+    let avro_decoder = AvroDecoder::new(SrSettings::new("http://localhost:8081".into()));
 
-    let mut consumer = Consumer::from_hosts(vec![
-        "localhost:39092".into(),
-        "localhost:39093".into(),
-        "localhost:39094".into(),
-    ])
-    .with_topic_partitions("rustonomicon".to_owned(), &[0])
-    .with_group("mygroup".into())
-    .with_offset_storage(Some(GroupOffsetStorage::Kafka))
-    .create()
-    .unwrap();
+    consumer
+        .subscribe(&["rustonomicon"])
+        .expect("Can't subscribe to specific topics");
 
-    loop {
-        let message = consumer.poll()?;
-
-        for ms in message.iter() {
-            for m in ms.messages().iter() {
-                let person = serde_avro_fast::from_datum_slice::<Person>(&m.value[5..], &schema)
-                    .expect("Failed to deserialize");
-                println!("{:?}", person.name);
-                consumer.consume_message("rustonomicon", ms.partition(), m.offset)?;
-            }
-            consumer.commit_consumed()?;
+    while let Ok(message) = consumer.recv().await {
+        let value_result = avro_decoder.decode(message.payload()).await?.value;
+        if let Value::Record(value_result) = value_result {
+            println!("{:?}", value_result.get(0));
         }
+
+        consumer.commit_message(&message, CommitMode::Async)?;
     }
 
-    // Ok(())
-}
-
-#[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-struct Person<'a> {
-    name: &'a str,
-    favorite_number: u32,
-    height: f64,
+    Ok(())
 }
