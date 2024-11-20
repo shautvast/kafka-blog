@@ -13,13 +13,10 @@ async fn main() -> anyhow::Result<()> {
             "bootstrap.servers",
             "localhost:39092,localhost:39093,localhost:39094",
         )
-        .create()
-        .expect("Consumer creation error");
+        .create()?;
     let avro_decoder = AvroDecoder::new(SrSettings::new("http://localhost:8081".into()));
 
-    consumer
-        .subscribe(&["rustonomicon"])
-        .expect("Can't subscribe to specific topics");
+    consumer.subscribe(&["rustonomicon"])?;
 
     while let Ok(message) = consumer.recv().await {
         let value_result = avro_decoder.decode(message.payload()).await?.value;
